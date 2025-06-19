@@ -8,7 +8,6 @@ import com.jonhvtr.todolist.exception.TaskException;
 import com.jonhvtr.todolist.repository.TaskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 
@@ -25,22 +24,54 @@ public class TaskService {
         return taskRepository.findAll().stream().map(TaskResponseDTO::new).toList();
     }
 
-    public void createTask(@RequestBody TaskRequestDTO data) {
-        Task taskData = new Task(data);
-        taskData.setTitle(data.title());
-        taskData.setContent(data.content());
+    public List<TaskResponseDTO> findByIdTask(Long id) {
+        return taskRepository.findById(id).stream().map(TaskResponseDTO::new).toList();
+    }
 
+    public void createTask(TaskRequestDTO data) {
+        Task taskData = new Task(data);
+        taskRepository.save(taskData);
+    }
+
+    public void updateStatus(Long taskId, String statusStr) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(TaskException::new);
+
+        Status newStatus;
         try {
-            taskData.setStatus(Status.valueOf(String.valueOf(data.status())));
+            newStatus = Status.valueOf(statusStr.toUpperCase());
         } catch (IllegalArgumentException e) {
-            System.err.println("Status inválido recebido: " + data.status());
-            taskData.setStatus(Status.PENDING);
+            throw new RuntimeException("Status inválido: " + statusStr);
         }
 
+        task.changeStatus(newStatus);
+        taskRepository.save(task);
+    }
+
+    public void updateTask(Long taskId, TaskRequestDTO data) {
+        Task task = taskRepository.findById(taskId).orElseThrow(TaskException::new);
+
+        String newTitle;
+        String newContent;
+
         try {
-            taskRepository.save(taskData);
+            newTitle = data.title();
+            newContent = data.content();
         } catch (TaskException e) {
-            System.out.println(e.getMessage());
+            throw new TaskException();
+        }
+
+        task.changeTask(newTitle, newContent);
+        taskRepository.save(task);
+    }
+
+    public void deleteTask(Long id) {
+        Task task = taskRepository.findById(id).orElseThrow(TaskException::new);
+
+        try {
+            taskRepository.delete(task);
+        } catch (TaskException e) {
+            throw new TaskException();
         }
     }
 }

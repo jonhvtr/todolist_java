@@ -1,6 +1,8 @@
 package com.jonhvtr.todolist.controller.dto;
 
-import com.jonhvtr.todolist.entity.enums.Status;
 
-public record TaskRequestDTO(String title, String content, Status status) {
+import jakarta.validation.constraints.NotBlank;
+
+public record TaskRequestDTO(@NotBlank(message = "O título é obrigatório") String title,
+                             @NotBlank(message = "o conteúdo é obrigatório") String content) {
 }
