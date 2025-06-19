@@ -40,7 +40,7 @@ public class Task {
     public Task(TaskRequestDTO data) {
         this.title = data.title();
         this.content = data.content();
-        this.status = data.status();
+        this.status = Status.PENDING;
     }
 
     @PrePersist
@@ -54,5 +54,13 @@ public class Task {
         updatedAt = LocalDateTime.now();
     }
 
+    public void changeStatus(Status newStatus) {
+        this.status = newStatus;
+    }
+
+    public void changeTask(String newTitle, String newContent) {
+        this.title = newTitle;
+        this.content = newContent;
+    }
 
 }
