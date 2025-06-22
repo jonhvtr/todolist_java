@@ -6,10 +6,10 @@ import com.jonhvtr.todolist.controller.dto.TaskStatusDTO;
 import com.jonhvtr.todolist.service.TaskService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -23,36 +23,39 @@ public class TaskController {
     }
 
     @GetMapping
-    public List<TaskResponseDTO> allTasks() {
-        return taskService.allTasks();
+    public ResponseEntity<List<TaskResponseDTO>> allTasks() {
+        var allTasks = taskService.allTasks();
+        return ResponseEntity.ok().body(allTasks);
     }
 
     @PatchMapping("/{id}")
-    public List<TaskResponseDTO> findByIdTask(@PathVariable Long id) {
-        return taskService.findByIdTask(id);
+    public ResponseEntity<List<TaskResponseDTO>> findByIdTask(@PathVariable Long id) {
+        var getTaskById = taskService.findByIdTask(id);
+        return ResponseEntity.ok().body(getTaskById);
     }
 
     @PostMapping()
-    @ResponseStatus(HttpStatus.CREATED)
-    public void createTask(@Valid @RequestBody TaskRequestDTO data) {
-        taskService.createTask(data);
+    public ResponseEntity<TaskResponseDTO> createTask(@Valid @RequestBody TaskRequestDTO data) {
+        var newTask = taskService.createTask(data);
+        URI location = URI.create("/tasks/" + newTask.getId());
+        return ResponseEntity.created(location).body(new TaskResponseDTO(newTask));
     }
 
     @PatchMapping("/{id}/status")
     public ResponseEntity<Void> updateStatus(@PathVariable Long id, @RequestBody TaskStatusDTO data) {
         taskService.updateStatus(id, data.status());
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok().build();
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Void> updateTask(@PathVariable Long id, @RequestBody TaskRequestDTO data) {
-        taskService.updateTask(id, data);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<TaskResponseDTO> updateTask(@PathVariable Long id, @RequestBody TaskRequestDTO data) {
+        var updatedTask = taskService.updateTask(id, data);
+        return ResponseEntity.ok().body(new TaskResponseDTO(updatedTask));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
+    public ResponseEntity<String> deleteTask(@PathVariable Long id) {
         taskService.deleteTask(id);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 }
