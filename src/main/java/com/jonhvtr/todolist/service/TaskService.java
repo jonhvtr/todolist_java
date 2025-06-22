@@ -4,6 +4,7 @@ import com.jonhvtr.todolist.controller.dto.TaskRequestDTO;
 import com.jonhvtr.todolist.controller.dto.TaskResponseDTO;
 import com.jonhvtr.todolist.entity.Task;
 import com.jonhvtr.todolist.entity.enums.Status;
+import com.jonhvtr.todolist.exception.InvalidTask;
 import com.jonhvtr.todolist.exception.TaskException;
 import com.jonhvtr.todolist.repository.TaskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,57 +22,59 @@ public class TaskService {
     }
 
     public List<TaskResponseDTO> allTasks() {
-        return taskRepository.findAll().stream().map(TaskResponseDTO::new).toList();
+        try {
+            return taskRepository.findAll().stream().map(TaskResponseDTO::new).toList();
+        } catch (InvalidTask e) {
+            throw new InvalidTask("Nenhuma Task");
+        }
     }
 
     public List<TaskResponseDTO> findByIdTask(Long id) {
-        return taskRepository.findById(id).stream().map(TaskResponseDTO::new).toList();
+        var getTaskById = taskRepository.findById(id).orElseThrow(() -> new TaskException("Task não encontrada"));
+
+        return List.of(new TaskResponseDTO(getTaskById));
     }
 
-    public void createTask(TaskRequestDTO data) {
+    public Task createTask(TaskRequestDTO data) {
+        if (data.title() == null || data.title().trim().isEmpty()) {
+            throw new InvalidTask("O campo título é obrigatório.");
+        }
+
         Task taskData = new Task(data);
-        taskRepository.save(taskData);
+        return taskRepository.save(taskData);
     }
 
     public void updateStatus(Long taskId, String statusStr) {
         Task task = taskRepository.findById(taskId)
-                .orElseThrow(TaskException::new);
+                .orElseThrow(() -> new TaskException("Task não encontrada"));
 
         Status newStatus;
         try {
             newStatus = Status.valueOf(statusStr.toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Status inválido: " + statusStr);
+            throw new InvalidTask("Status inválido: " + statusStr);
         }
 
         task.changeStatus(newStatus);
         taskRepository.save(task);
     }
 
-    public void updateTask(Long taskId, TaskRequestDTO data) {
-        Task task = taskRepository.findById(taskId).orElseThrow(TaskException::new);
+    public Task updateTask(Long taskId, TaskRequestDTO data) {
+        Task task = taskRepository.findById(taskId).orElseThrow(() -> new TaskException("Task não encontrada"));
 
-        String newTitle;
-        String newContent;
+        String newTitle = data.title();
+        String newContent = data.content();
 
-        try {
-            newTitle = data.title();
-            newContent = data.content();
-        } catch (TaskException e) {
-            throw new TaskException();
+        if (newTitle == null || newTitle.trim().isEmpty()) {
+            throw new InvalidTask("O campo título é obrigatório.");
         }
 
-        task.changeTask(newTitle, newContent);
-        taskRepository.save(task);
+        task.changeTask(newTitle.trim(), newContent);
+        return taskRepository.save(task);
     }
 
     public void deleteTask(Long id) {
-        Task task = taskRepository.findById(id).orElseThrow(TaskException::new);
-
-        try {
-            taskRepository.delete(task);
-        } catch (TaskException e) {
-            throw new TaskException();
-        }
+        Task task = taskRepository.findById(id).orElseThrow(() -> new TaskException("Task não encontrada"));
+        taskRepository.delete(task);
     }
 }

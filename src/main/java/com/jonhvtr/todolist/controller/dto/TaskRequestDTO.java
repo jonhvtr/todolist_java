@@ -1,8 +1,7 @@
 package com.jonhvtr.todolist.controller.dto;
 
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 
-public record TaskRequestDTO(@NotBlank(message = "O título é obrigatório") String title,
-                             @NotBlank(message = "o conteúdo é obrigatório") String content) {
+public record TaskRequestDTO(@NotEmpty(message = "O título é obrigatório") String title, String content) {
 }
