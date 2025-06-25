@@ -14,10 +14,8 @@ jobs:
         ports:
           - 3306:3306
         env:
-          MYSQL_ROOT_PASSWORD: ${{secrets.MYSQL_PASSWORD}}
+          MYSQL_ROOT_PASSWORD: ${{secrets.MYSQL_PASSWORD:root}}
           MYSQL_DATABASE: todolistdb
-          MYSQL_USER: root
-          MYSQL_PASSWORD: ${{secrets.MYSQL_PASSWORD}}
         options: >-
           --health-cmd="mysqladmin ping --silent"
           --health-interval=10s
