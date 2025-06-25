@@ -8,6 +8,21 @@ jobs:
   check-application:
     runs-on: ubuntu-latest
 
+    services:
+      mysql:
+        image: mysql:8.0
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_DATABASE: todolistdb
+          MYSQL_USER: root
+          MYSQL_PASSWORD: ${{secrets.MYSQL_PASSWORD}}
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -18,5 +33,20 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Wait for MySQL to be ready
+        run: |
+          echo "Aguardando MySQL iniciar..."
+          for i in {1..20}; do
+          nc -z 127.0.0.1 3306 && echo "MySQL está pronto!" && break
+          echo "Esperando MySQL... tentativa $i"
+          sleep 3
+          done
+
       - name: Build with Maven
         run: mvn -B package --file pom.xml
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_NAME: todolistdb
+          DB_USERNAME: root
+          DB_PASSWORD: ${{secrets.MYSQL_PASSWORD}}
