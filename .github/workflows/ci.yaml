@@ -1,4 +1,4 @@
-name: java-ci-workflow
+name: java-ci-workflows
 
 on:
   pull_request:
