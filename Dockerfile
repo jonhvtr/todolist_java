@@ -4,6 +4,11 @@ WORKDIR /app
 COPY pom.xml .
 COPY src ./src
 
+ENV DB_HOST=${DB_HOST}
+ENV DB_NAME=${DB_NAME}
+ENV DB_USERNAME=${DB_USERNAME}
+ENV DB_PASSWORD=${DB_PASSWORD}
+
 RUN mvn clean package
 
 FROM eclipse-temurin:17-jdk
