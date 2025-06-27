@@ -4,8 +4,6 @@ WORKDIR /app
 COPY pom.xml .
 COPY src ./src
 
-COPY .env .
-
 ENV DB_HOST=${DB_HOST}
 ENV DB_NAME=${DB_NAME}
 ENV DB_USERNAME=${DB_USERNAME}
