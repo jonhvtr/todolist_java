@@ -10,19 +10,20 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      mysql:
-        image: mysql:8.0
+      postgresql:
+        image: postgres:17
         ports:
-          - 3306:3306
+          - 5433:5433
         env:
-          MYSQL_ROOT_PASSWORD: ${{secrets.MYSQL_PASSWORD}}
-          MYSQL_DATABASE: todolistdb
+          POSTGRES_DB: todolist
+          POSTGRES_USER: user_local
+          POSTGRES_PASSWORD: 123
 
-        options: >-
-          --health-cmd="mysqladmin ping --silent"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
+          options: >-
+            --health-cmd pg_isready
+            --health-interval 10s
+            --health-timeout 5s
+            --health-retries 5
 
     steps:
       - uses: actions/checkout@v4
@@ -34,23 +35,15 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Wait for MySQL to be ready
-        run: |
-          echo "Aguardando MySQL iniciar..."
-          for i in {1..20}; do
-          nc -z 127.0.0.1 3306 && echo "MySQL está pronto!" && break
-          echo "Esperando MySQL... tentativa $i"
-          sleep 3
-          done
-
       - name: Build with Maven
-        run: mvn -B package --file pom.xml
+        run: ./mvnw clean verify
+
         env:
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_NAME: todolistdb
-          DB_USERNAME: root
-          DB_PASSWORD: ${{secrets.MYSQL_PASSWORD}}
+          DB_HOST: localhost
+          DB_PORT: 5433
+          DB_NAME: todolist
+          DB_USERNAME: user_local
+          DB_PASSWORD: 123
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
