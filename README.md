@@ -20,8 +20,8 @@ lembretes (reminders) e visualização por calendário.
 
 - ✅ Criar, listar, atualizar e deletar tarefas
 - ✅ Marcar tarefas como completas
-- ✅ Definir prioridades (LOW, MEDIUM, HIGH, URGENT)
-- ✅ Definir status (PENDING, IN_PROGRESS, COMPLETED, CANCELLED)
+- ✅ Definir prioridades (NONE, LOW, MEDIUM, HIGH)
+- ✅ Definir status (PENDING, IN_PROGRESS, COMPLETED)
 - ✅ Adicionar data de vencimento (due date)
 
 ### Sistema de Lembretes (Reminders)
@@ -36,7 +36,7 @@ lembretes (reminders) e visualização por calendário.
 - 📅 Visualização de tarefas por mês (calendário)
 - 🔍 Busca de tarefas por título/conteúdo
 - 📊 Filtro por status e prioridade
-- ⚠️ Tratamento de erros com Problem Detail (RFC 7807)
+- ⚠️ Tratamento de erros com Problem Detail (RFC 9457)
 - 📝 Sistema de logs estruturado
 
 ## 📋 Pré-requisitos
