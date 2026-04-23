@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd
+    http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
+
+    <changeSet id="006-create-table-tasks" author="jonhvtr">
+        <createTable tableName="tasks">
+            <column name="id" type="uuid" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="client_id" type="uuid" defaultValueComputed="uuid_generate_v4()">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="title" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="content" type="text"/>
+
+            <column name="due_date" type="timestamp"/>
+
+            <column name="status" type="status_tasks" defaultValue="PENDING">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="priority" type="priority_tasks" defaultValue="NONE">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="reminder_date_time" type="timestamp"/>
+
+            <column name="created_at" type="timestamp" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="updated_at" type="timestamp" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="tasks"
+                baseColumnNames="client_id"
+                constraintName="fk_tasks_client"
+                referencedTableName="clients"
+                referencedColumnNames="id"/>
+
+        <createIndex tableName="tasks" indexName="idx_tasks_client_id">
+            <column name="client_id"/>
+        </createIndex>
+
+        <sql>
+            DROP TRIGGER IF EXISTS trigger_set_updated_at ON tasks;
+
+            CREATE TRIGGER trigger_set_updated_at
+            BEFORE UPDATE ON tasks
+            FOR EACH ROW
+            EXECUTE FUNCTION set_updated_at();
+
+        </sql>
+
+        <rollback>
+            <dropTable tableName="tasks"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
