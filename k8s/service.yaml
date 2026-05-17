@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: todolist-service
+spec:
+  selector:
+    app: todolist-api
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 8080
+      nodePort: 30080

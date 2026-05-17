@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: todolist-api
+  labels:
+    app: todolist-api
+spec:
+  containers:
+    - name: todolist-api
+      image: "jonhvtrdev/todolist:v1.0.1"
