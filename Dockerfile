@@ -1,19 +1,16 @@
-FROM maven:3.9.6-eclipse-temurin-17 AS build
-WORKDIR /app
+FROM maven:3.9.12-eclipse-temurin-25 AS build
+WORKDIR /build
 
-COPY pom.xml ./
-COPY src ./src
+COPY pom.xml .
+RUN mvn -B dependency:go-offline
 
+COPY src src
 RUN mvn clean package -DskipTests
 
-FROM eclipse-temurin:17-jdk
+FROM eclipse-temurin:25-jre
 WORKDIR /app
 
-COPY --from=build /app/target/todolist-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=build /build/target/*.jar app.jar
 
-ENV DB_HOST=localhost \
-    DB_NAME=todolist \
-    DB_USERNAME=user_local \
-    DB_PASSWORD=123
-
-CMD ["java", "-jar", "app.jar"]
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]
