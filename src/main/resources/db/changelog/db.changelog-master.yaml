@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - include:
+      file: db/changelog/changes/001-create-function-uuid.xml
+  - include:
+      file: db/changelog/changes/002-create-tasks-enum.xml
+  - include:
+      file: db/changelog/changes/003-create-table-roles.xml
+  - include:
+      file: db/changelog/changes/004-create-updated-at-function.xml
+  - include:
+      file: db/changelog/changes/005-create-table-clients.xml
+  - include:
+      file: db/changelog/changes/006-create-table-client_roles.xml
+  - include:
+      file: db/changelog/changes/007-create-table-tasks.xml

@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todolist-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: "todolist-api"
+  template:
+    metadata:
+      labels:
+        app: "todolist-api"
+    spec:
+      volumes:
+        - name: jwt-keys
+          secret:
+            secretName: jwt-secret
+
+      containers:
+        - name: "todolist-api"
+          image: "jonhvtrdev/todolist:v1.0.1"
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - containerPort: 8080
+
+          volumeMounts:
+            - name: jwt-keys
+              mountPath: /etc/jwt
+              readOnly: true
+
+          envFrom:
+            - secretRef:
+                name: db-secret
+
+          env:
+            - name: JWT_PRIVATE_KEY
+              value: "file:/etc/jwt/private.pem"
+
+            - name: JWT_PUBLIC_KEY
+              value: "file:/etc/jwt/public.pem"

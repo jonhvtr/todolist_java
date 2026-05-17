@@ -1,6 +1,7 @@
-package com.jonhvtr.todolist.exception;
+package com.jonhvtr.todolist.exception.task;
 
 import com.jonhvtr.todolist.domain.enums.Status;
+import com.jonhvtr.todolist.exception.TodoListException;
 import lombok.Getter;
 
 @Getter

@@ -1,196 +1,179 @@
 package com.jonhvtr.todolist.service;
 
 import com.jonhvtr.todolist.domain.dto.*;
+import com.jonhvtr.todolist.domain.entities.Client;
 import com.jonhvtr.todolist.domain.entities.Task;
-import com.jonhvtr.todolist.domain.enums.Priority;
-import com.jonhvtr.todolist.domain.enums.Status;
-import com.jonhvtr.todolist.exception.PriorityInvalidException;
-import com.jonhvtr.todolist.exception.StatusInvalidException;
-import com.jonhvtr.todolist.exception.TaskNotFoundException;
+import com.jonhvtr.todolist.domain.enums.ErrorCode;
+import com.jonhvtr.todolist.exception.task.TaskNotFoundException;
+import com.jonhvtr.todolist.infra.security.SecurityUtils;
+import com.jonhvtr.todolist.mapper.TaskMappers;
 import com.jonhvtr.todolist.repository.TaskRepository;
+import com.jonhvtr.todolist.repository.TaskSpecification;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Service
 public class TaskService {
-    private final TaskRepository taskRepository;
 
-    public TaskService(TaskRepository taskRepository) {
+    private final TaskRepository taskRepository;
+    private final TaskMappers taskMappers;
+    private final SecurityUtils securityUtils;
+
+    public TaskService(TaskRepository taskRepository, TaskMappers taskMappers, SecurityUtils securityUtils) {
         this.taskRepository = taskRepository;
+        this.taskMappers = taskMappers;
+        this.securityUtils = securityUtils;
     }
 
     @Transactional
-    public Task createTask(TaskRequest data) {
-        Task taskData = Task.builder()
-                .title(data.title())
-                .content(data.content())
-                .dueDate(data.dueDate() != null ? data.dueDate() : null)
-                .status(Status.PENDING)
-                .priority(data.priority() != null ? data.priority() : Priority.NONE)
-                .reminderDateTime(data.reminderDateTime() != null ? data.reminderDateTime() : null)
-                .build();
+    public TaskResponse createTask(TaskRequest data) {
+        Client client = securityUtils.getAuthenticationClient();
+        Task taskData = taskMappers.create().toTaskEntity(data);
+        taskData.setClient(client);
+        Task saved = taskRepository.save(taskData);
 
-        log.info("Creating new task: {}", taskData.getTitle());
-        return taskRepository.save(taskData);
+        log.info("Task created successfully: id={}, title={}", taskData.getId(), taskData.getTitle());
+        return taskMappers.create().toTaskResponse(saved);
     }
 
     @Transactional(readOnly = true)
-    public Page<TaskResponse> getAllTasks(Pageable pageable) {
-        return taskRepository.findAll(pageable).map(TaskResponse::new);
+    public Page<TaskResponse> getAllTasks(TaskFilter filter, Pageable pageable) {
+        UUID clientId = securityUtils.getAuthenticationClientId();
+        Specification<Task> spec = TaskSpecification.byFilter(filter)
+                .and(TaskSpecification.byClientId(clientId));
+
+        return taskRepository.findAll(spec, pageable).map(TaskResponse::new);
     }
 
     @Transactional(readOnly = true)
-    public TaskResponse getTaskById(Long taskId) {
-        var task = taskRepository.findById(taskId).orElseThrow(() -> new TaskNotFoundException(taskId));
+    public TaskResponse getTaskById(UUID taskId) {
+        UUID clientId = securityUtils.getAuthenticationClientId();
+        var task = taskRepository.findByIdAndClientId(taskId, clientId).orElseThrow(() -> new TaskNotFoundException(ErrorCode.TASK_NOT_FOUND, taskId));
         return new TaskResponse(task);
     }
 
     @Transactional(readOnly = true)
     public List<TaskResponse> searchTask(String search) {
-        return taskRepository.searchTasks(search);
+        UUID clientId = securityUtils.getAuthenticationClientId();
+
+        Specification<Task> spec =
+                TaskSpecification.byClientId(clientId)
+                        .and(TaskSpecification.titleContains(search));
+
+        return taskRepository.findAll(spec)
+                .stream()
+                .map(TaskResponse::new)
+                .toList();
     }
 
     @Transactional(readOnly = true)
-    public Page<TaskResponse> getAllByStatusOrPriority(Priority priority, Status status, Pageable pageable) {
-        Page<Task> tasks;
+    public List<TaskResponse> getAllByMonth(TaskByMonth data) {
+        UUID clientId = securityUtils.getAuthenticationClientId();
 
-        if (status != null && priority != null) {
-            tasks = taskRepository.getByPriorityAndStatus(priority, status, pageable);
-        } else if (status != null) {
-            tasks = taskRepository.getByStatus(status, pageable);
-        } else if (priority != null) {
-            tasks = taskRepository.getByPriority(priority, pageable);
+        Integer year = data.year();
+        Integer month = data.month();
+
+        LocalDateTime start;
+        LocalDateTime end;
+
+        if (month == null) {
+            start = LocalDate.of(year, 1, 1).atStartOfDay();
+            end = LocalDate.of(year, 12, 31).atTime(23, 59, 59);
         } else {
-            tasks = taskRepository.findAll(pageable);
+            YearMonth yearMonth = YearMonth.of(year, month);
+            start = yearMonth.atDay(1).atStartOfDay();
+            end = yearMonth.atEndOfMonth().atTime(23, 59, 59);
         }
 
-        return tasks.map(TaskResponse::new);
-    }
+        Specification<Task> spec = TaskSpecification.byClientId(clientId)
+                .and(TaskSpecification.dueDateBetween(start, end));
 
-    @Transactional(readOnly = true)
-    public List<TaskResponse> getAllByMonth(int month, int year) {
-        YearMonth yearMonth = YearMonth.of(year, month);
-
-        LocalDateTime start = yearMonth.atDay(1).atStartOfDay();
-        LocalDateTime end = yearMonth.atEndOfMonth().atTime(23, 59, 59);
-
-        List<Task> taskList = taskRepository.findAllByMonth(start, end);
-
-        return taskList.stream().map(TaskResponse::new).toList();
-    }
-
-    @Transactional
-    public void updateTask(TaskUpdate data) {
-        Task task = taskRepository.findById(data.id()).orElseThrow(() -> new TaskNotFoundException(data.id()));
-
-        Status newStatus;
-        Priority newPriority;
-        if (data.status() != null) {
-            try {
-                newStatus = Status.valueOf(data.status().toUpperCase());
-            } catch (IllegalArgumentException e) {
-                throw new StatusInvalidException(Status.valueOf(data.status()));
-            }
-        } else {
-            newStatus = task.getStatus();
-        }
-
-        if (data.priority() != null) {
-            try {
-                newPriority = Priority.valueOf(data.priority().toUpperCase());
-            } catch (IllegalArgumentException e) {
-                throw new PriorityInvalidException(Priority.valueOf(data.priority().toUpperCase()));
-            }
-        } else {
-            newPriority = task.getPriority();
-        }
-
-        Task updated = task.toBuilder()
-                .title(data.title() != null ? data.title() : task.getTitle())
-                .content(data.content() != null ? data.content() : task.getContent())
-                .dueDate(data.dueDate() != null ? data.dueDate() : task.getDueDate())
-                .status(newStatus)
-                .priority(newPriority)
-                .reminderDateTime(data.reminderDateTime() != null ? data.reminderDateTime() : task.getReminderDateTime())
-                .build();
-
-        log.info("Updating task: {}", data.id());
-        taskRepository.save(updated);
+        return taskRepository.findAll(spec)
+                .stream()
+                .map(TaskResponse::new)
+                .toList();
     }
 
     @Transactional
-    public void completedTask(Long taskId) {
-        Task task = taskRepository.findById(taskId).orElseThrow(() -> new TaskNotFoundException(taskId));
-        Task updatedStatus = task.toBuilder()
-                .status(Status.COMPLETED)
-                .build();
+    public void updateTask(UUID taskId, TaskUpdate dto) {
+        UUID clientId = securityUtils.getAuthenticationClientId();
+        Task task = taskRepository.findByIdAndClientId(taskId, clientId).orElseThrow(() -> new TaskNotFoundException(ErrorCode.TASK_NOT_FOUND, taskId));
+        taskMappers.update().updateTask(task, dto);
+
+        log.info("Updating task: {}", taskId);
+        taskRepository.save(task);
+    }
+
+    @Transactional
+    public void completedTask(UUID taskId) {
+        UUID clientId = securityUtils.getAuthenticationClientId();
+        Task task = taskRepository.findByIdAndClientId(taskId, clientId).orElseThrow(() -> new TaskNotFoundException(ErrorCode.TASK_NOT_FOUND, taskId));
+        taskMappers.status().toCompleted(task, task);
 
         log.info("Completing task: {}", taskId);
-        taskRepository.save(updatedStatus);
+        taskRepository.save(task);
     }
 
     @Transactional
-    public Task addDueDate(Long taskId, AddDate addDate) {
-        Task task = taskRepository.findById(taskId).orElseThrow(() -> new TaskNotFoundException(taskId));
-        Task updatedStatus = task.toBuilder()
-                .dueDate(addDate.dateTime() != null ? addDate.dateTime() : null)
-                .build();
+    public void addDueDate(UUID taskId, AddDate addDate) {
+        UUID clientId = securityUtils.getAuthenticationClientId();
+        Task task = taskRepository.findByIdAndClientId(taskId, clientId).orElseThrow(() -> new TaskNotFoundException(ErrorCode.TASK_NOT_FOUND, taskId));
+        taskMappers.dueDate().applyDueDate(addDate, task);
 
         log.info("Adding due date to task: {}", taskId);
-        return taskRepository.save(updatedStatus);
+        taskRepository.save(task);
     }
 
     @Transactional
-    public void deleteTask(Long taskId) {
-        Task task = taskRepository.findById(taskId).orElseThrow(() -> new TaskNotFoundException(taskId));
+    public void deleteTask(UUID taskId) {
+        UUID clientId = securityUtils.getAuthenticationClientId();
+        Task task = taskRepository.findByIdAndClientId(taskId, clientId).orElseThrow(() -> new TaskNotFoundException(ErrorCode.TASK_NOT_FOUND, taskId));
+
         log.info("Deleting task: {}", taskId);
         taskRepository.delete(task);
     }
 
     @Transactional
-    public Task addReminderToTask(Long taskId, AddDate addDate) {
-        Task task = taskRepository.findById(taskId).orElseThrow(() -> new TaskNotFoundException(taskId));
-
-        Task addReminder = task.toBuilder()
-                .reminderDateTime(addDate.dateTime())
-                .build();
+    public void addReminderToTask(UUID taskId, AddDate addDate) {
+        UUID clientId = securityUtils.getAuthenticationClientId();
+        Task task = taskRepository.findByIdAndClientId(taskId, clientId).orElseThrow(() -> new TaskNotFoundException(ErrorCode.TASK_NOT_FOUND, taskId));
+        taskMappers.reminder().applyReminder(addDate, task);
 
         log.info("Adding reminder to task {}: {}", taskId, addDate);
-        return taskRepository.save(addReminder);
+        taskRepository.save(task);
     }
 
     @Transactional
-    public Task removeReminderFromTask(Long taskId) {
-        Task task = taskRepository.findById(taskId).orElseThrow(() -> new TaskNotFoundException(taskId));
-
-        Task removeReminder = task.toBuilder()
-                .reminderDateTime(null)
-                .build();
+    public void removeReminderFromTask(UUID taskId) {
+        UUID clientId = securityUtils.getAuthenticationClientId();
+        Task task = taskRepository.findByIdAndClientId(taskId, clientId).orElseThrow(() -> new TaskNotFoundException(ErrorCode.TASK_NOT_FOUND, taskId));
+        taskMappers.reminder().clearReminder(task, task);
 
         log.info("Removing reminder to task: {}", taskId);
-        return taskRepository.save(removeReminder);
+        taskRepository.save(task);
     }
 
     @Transactional(readOnly = true)
-    public Page<TaskResponse> getAllReminders(Pageable pageable) {
-        return taskRepository.findAllReminders(pageable).map(TaskResponse::new);
-    }
+    public Page<TaskResponse> getReminders(ReminderFilter filter, Pageable pageable) {
+        UUID clientId = securityUtils.getAuthenticationClientId();
 
-    @Transactional(readOnly = true)
-    public Page<TaskResponse> getPendingReminders(Pageable pageable) {
-        return taskRepository.findPendingReminders(pageable).map(TaskResponse::new);
-    }
+        Specification<Task> spec =
+                TaskSpecification.byClientId(clientId)
+                        .and(TaskSpecification.reminderFilter(filter));
 
-    @Transactional(readOnly = true)
-    public Page<TaskResponse> getRemindersToSendNow(Pageable pageable) {
-        return taskRepository.findRemindersToSend(pageable, LocalDateTime.now()).map(TaskResponse::new);
+        return taskRepository
+                .findAll(spec, pageable)
+                .map(TaskResponse::new);
     }
 }
