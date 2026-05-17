@@ -49,10 +49,6 @@ public class SecurityConfigurations {
         );
     }
 
-    protected static final RouteConfig[] ENDPOINTS_WITH_AUTHENTICATION_NOT_SUPPORTED = {
-            new RouteConfig("/auth/**", HttpMethod.POST),
-    };
-
     protected static final RouteConfig[] ENDPOINTS_WITH_AUTHENTICATION_SUPPORTED = {
             new RouteConfig("/tasks", HttpMethod.GET),
             new RouteConfig("/tasks/{taskId}", HttpMethod.GET, HttpMethod.PUT, HttpMethod.DELETE),
