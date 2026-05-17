@@ -1,0 +1,64 @@
+spring:
+  application:
+    name: todolist
+  jpa:
+  hibernate:
+    ddl-auto: update
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  properties:
+    hibernate:
+      dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+    format-sql: true
+    show-sql.properties:
+      hibernate:
+        format_sql: true
+      properties:
+        ddl.auto: update
+
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+    serialization:
+      write-dates-as-timestamps: false
+
+  mvc:
+    throw-exception-if-no-handler-found: true
+  web:
+    resources:
+      add-mappings: false
+
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+
+logging:
+  level:
+    root: INFO
+    org:
+      springframework:
+        jdbc:
+          datasource: INFO
+        web: INFO
+        security: TRACE
+      hibernate:
+        SQL: WARN
+        type:
+          descriptor:
+            sql: TRACE
+    com:
+      jonhvtr:
+        todolist:
+          service: INFO
+  file:
+    name: todolist.log
+  pattern:
+    console: "%d{aaaa-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
+
+jwt:
+  public-key: ${JWT_PUBLIC_KEY}
+  private-key: ${JWT_PRIVATE_KEY}
