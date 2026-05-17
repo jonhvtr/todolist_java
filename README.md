@@ -5,7 +5,7 @@ lembretes (reminders) e visualização por calendário.
 
 ## 🚀 Tecnologias
 
-- Java 17+
+- Java 25+
 - Spring Boot 3.x
 - Spring Data JPA - Persistência de dados
 - Spring Validation - Validação de dados
@@ -68,9 +68,7 @@ Crie um banco de dados PostgreSQL:
 Use variáveis de ambiente:
 
 ````shell
-    DB_HOST=localhost
-    DB_PORT=3306
-    DB_NAME=seu_database
+    DB_HOST=db_host
     DB_USERNAME=seu_usuario
     DB_PASSWORD=sua_senha
 ````
@@ -177,16 +175,20 @@ http://localhost:8080/swagger-ui/index.html#/
 ### 🗄️ Modelo de Dados
 ````shell
     Task
-    java{
-    "id": 1,
-    "title": "String",
-    "content": "String",
-    "dueDate": "LocalDateTime",
-    "status": "PENDING | IN_PROGRESS | COMPLETED",
-    "priority": "NONE | LOW | MEDIUM | HIGH",
-    "reminderDateTime": "LocalDateTime (nullable)",
-    "createdAt": "LocalDateTime",
-    "updatedAt": "LocalDateTime"
+    {
+      "id": "c501aa8e-93d0-4f8e-9807-090q8e6e72d6",
+      "client": {
+        "id": "c1fcc20c-ddb5-4388-a1e8-7126a674a783",
+        "email": "User_nzc04e@test.com"
+      },
+      "title": "String",
+      "content": "String",
+      "dueDate": "LocalDateTime dd/MM/yyyy HH:mm",
+      "status": "PENDING",
+      "priority": "NONE | LOW | MEDIUM | HIGH",
+      "reminderDateTime": LocalDateTime (nullable),
+      "createdAt": "LocalDateTime",
+      "updatedAt": "LocalDateTime"
     }
 ````
 
