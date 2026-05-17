@@ -34,7 +34,10 @@ build/
 
 .env
 
-src/main/resources/application-dev.properties
+src/main/resources/application-test.yaml
 src/main/resources/application-prod.properties
 
+*.key
 *.log
+*.pem
+.secrets/
