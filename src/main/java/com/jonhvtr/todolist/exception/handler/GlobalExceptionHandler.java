@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.jonhvtr.todolist.domain.enums.ErrorCode;
 import com.jonhvtr.todolist.exception.TodoListException;
 import com.jonhvtr.todolist.exception.client.ClientEmailAlreadyExistsException;
+import com.jonhvtr.todolist.exception.key.RsaConversionException;
 import com.jonhvtr.todolist.exception.task.TaskNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
@@ -196,6 +197,20 @@ public class GlobalExceptionHandler {
         ProblemDetail problemDetail = ProblemDetailFactory.from(ErrorCode.AUTH_TOKEN_MISSING, detail);
         problemDetail.setType(URI.create(BASE_ERROR_URI + "auth-token-missing"));
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problemDetail);
+    }
+
+    @Order(11)
+    @ExceptionHandler(RsaConversionException.class)
+    public ResponseEntity<ProblemDetail> handleRsaConversion(RsaConversionException ex, HttpServletRequest request) {
+        String traceId = UUID.randomUUID().toString();
+        String detail = ex.getMessage();
+        log.warn("[{}] RsaConversion - path={}", traceId, request.getRequestURI());
+
+        ProblemDetail problemDetail = ProblemDetailFactory.from(ErrorCode.RSA_CONVERSION_ERROR, detail);
+        problemDetail.setType(URI.create(BASE_ERROR_URI + "rsa-conversion-error"));
+        problemDetail.setProperty("key_type", ex.getKeyType());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
+
     }
 
     @Order(99)
