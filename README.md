@@ -9,12 +9,24 @@ lembretes (reminders) e visualização por calendário.
 - Spring Boot 3.x
 - Spring Data JPA - Persistência de dados
 - Spring Validation - Validação de dados
-- MySQL - Banco de dados (ajuste conforme seu projeto)
+- Spring Security - Camada de segurança da aplicação, controle de autenticação e autorização.
+- OAuth2 / JWT - Autenticação baseada em tokens, suportando fluxos OAuth2 e segurança stateless.
+- PostgreSQL - Banco de dados relacional utilizado pela aplicação.
+- Liquibase - Controle de versionamento e migração de schema do banco de dados.
+- MapStruct - Mapeamento eficiente entre DTOs e entidades.
+- JUnit 5 - Framework para testes unitários.
+- Mockito - Framework para criação de mocks em testes unitários e de integração.
+- Docker - Containerização da aplicação e serviços dependentes. 
+- Kubernetes - Orquestração de containers, gerenciamento de deploys e escalabilidade.
 - Lombok - Redução de boilerplate
 - SLF4J + Logback - Sistema de logs
 - Swagger/OpenAPI - Documentação da API (se estiver usando)
 
 ## ✨ Funcionalidades
+
+### Criar Perfil
+- 🔒 Cadastro de usuários (registro)
+- 🔒 Autenticação de usuários (login)
 
 ### Gerenciamento de Tarefas
 
@@ -29,21 +41,24 @@ lembretes (reminders) e visualização por calendário.
 - ⏰ Adicionar lembretes a qualquer tarefa
 - ⏰ Remover lembretes
 - ⏰ Listar lembretes pendentes
-- ⏰ Buscar lembretes que precisam ser enviados
 
 ### Recursos Avançados
 
 - 📅 Visualização de tarefas por mês (calendário)
-- 🔍 Busca de tarefas por título/conteúdo
+- 🔍 Busca de tarefas por título
 - 📊 Filtro por status e prioridade
 - ⚠️ Tratamento de erros com Problem Detail (RFC 9457)
 - 📝 Sistema de logs estruturado
 
 ## 📋 Pré-requisitos
 
-- Java 17 ou superior
-- Maven 3.8+
-- MySQL (ou seu banco de dados)
+- Java  25+
+- Maven 3.9+
+- Docker - Para execução do PostgreSQL e demais serviços em container
+- Docker Compose (opcional, mas recomendado) - Para orquestração local dos containers
+- Kubernetes (Kind ou Minikube) - Para execução do ambiente em cluster local
+- kubectl - CLI para gerenciamento do cluster Kubernetes
+- PostgreSQL (opcional local) - Necessário apenas se não utilizar Docker/Kubernetes
 - Git
 
 ## 🔧 Instalação e Configuração
@@ -55,40 +70,75 @@ lembretes (reminders) e visualização por calendário.
         cd todolist-api
    ````
 
-**2. Configure o banco de dados**
+## 🐘 2. Configure o banco de dados
 
-Crie um banco de dados PostgreSQL:
+### Opção 1 — Docker (recomendado)
 
-   ````sql
-       CREATE DATABASE todolist_db;
-   ````
+```yaml
+environment:
+  POSTGRES_DB: todolistdb
+  POSTGRES_USER: dcs_user
+  POSTGRES_PASSWORD: dcs_password
+```
 
-**3. Configure as variáveis de ambiente**
+### Opção 2 - Banco local
+```sql
+    CREATE DATABASE todolistdb;
+```
 
-Use variáveis de ambiente:
+## ⚙️ 3. Variáveis de ambiente
 
-````shell
-    DB_HOST=db_host
-    DB_USERNAME=seu_usuario
-    DB_PASSWORD=sua_senha
-````
+A aplicação utiliza DB_URL como conexão principal.
 
-**4. Rode a aplicação**
+#### Local
+```shell
+    DB_URL=jdbc:postgresql://localhost:5432/todolistdb
+    DB_USERNAME=dcs_user
+    DB_PASSWORD=dcs_password
+```
 
-`````shell
-   mvn spring-boot:run
-``````
+#### Docker Compose
+```shell
+    DB_URL=jdbc:postgresql://dcs-postgres:5432/todolistdb
+    DB_USERNAME=dcs_user
+    DB_PASSWORD=dcs_password
+```
+
+#### Kubernetes
+```shell
+    DB_URL=jdbc:postgresql://postgres:5432/todolistdb
+    DB_USERNAME=dcs_user
+    DB_PASSWORD=dcs_password
+```
+
+## 🚀 4. Executando a aplicação
+
+### Local (Maven)
+```shell
+    mvn spring-boot:run
+```
+
+### Docker Compose
+```shell
+    docker compose up -d
+```
+
+### Kubernetes
+```shell
+    kubectl apply -f k8s/
+    kubectl rollout restart deployment todolist-api
+```
 
 #### A API estará disponível em: http://localhost:8080
 
-### 📚 Documentação da API
-**Base URL**
-
-````
-http://localhost:8080/swagger-ui/index.html#/
-````
-
 ## 📋 Endpoints da API
+
+### Cliente (Client)
+
+| Método | Endpoint         | Descrição       |
+|--------|------------------|-----------------|
+| POST   | `/auth/register` | Cria um usuário |
+| POST   | `/auth/login`    | Realiza o login |
 
 ### 🗂️ Tarefas (Tasks)
 
@@ -111,18 +161,16 @@ http://localhost:8080/swagger-ui/index.html#/
 | PATCH   | `/tasks/{taskId}/add-reminder`   | Adiciona lembrete a uma tarefa       |
 | PATCH   | `/tasks/{taskId}/remove-reminder`| Remove lembrete de uma tarefa        |
 | GET     | `/tasks/reminder`                | Lista todas as tarefas com lembretes |
-| GET     | `/tasks/reminder/pending`        | Lista lembretes pendentes            |
-| GET     | `/tasks/reminder/to-send-now`    | Lembretes que devem ser enviados agora |
 
 ---
 
 ### 🔍 Busca e Filtros
 
-| Método | Endpoint                                       | Descrição                                     |
-|---------|------------------------------------------------|-----------------------------------------------|
-| GET     | `/tasks/search?q={termo}`                      | Busca tarefas por título/conteúdo             |
-| GET     | `/tasks/status-priority?status={status}&priority={priority}` | Filtra por status e/ou prioridade |
-| GET     | `/tasks/calendar?year={year}&month={month}`    | Lista tarefas de um mês específico            |
+| Método | Endpoint                                      | Descrição                                     |
+|---------|-----------------------------------------------|-----------------------------------------------|
+| GET     | `/tasks/search?q={termo}`                     | Busca tarefas por título             |
+| GET     | `/tasks/ | Filtra por status e/ou prioridade |
+| GET     | `/tasks/calendar`    | Lista tarefas de um mês específico            |
 
 ## Exemplos de Requisições
 ### Criar uma tarefa
@@ -131,45 +179,38 @@ http://localhost:8080/swagger-ui/index.html#/
     Content-Type: application/json
     
     {
-    "title": "Estudar Spring Boot",
-    "content": "Revisar conceitos de JPA e validações",
-    "dueDate": "2025-10-30T18:00:00",
-    "status": "PENDING",
-    "priority": "HIGH"
+        "title": "Task",
+        "content": "Content",
+        "dueDate": "dd/MM/yyyy HH:mm",
+        "priority": "HIGH"
     }
 `````
 ### Adicionar lembrete
 ````shell
-    PATCH /tasks/1/add-reminder
+    PATCH /tasks/{taskId}/add-reminder
     Content-Type: application/json
     
     {
-    "reminderDateTime": "2025-10-28T10:00:00"
+      "dateTime": "dd/MM/yyyy HH:mm"
     }
 ````
-### Buscar tarefas do mês
-````shell
-    GET /tasks/calendar?month=10&year=2025
-````
+
 ### Respostas de Erro (Problem Detail)
 **A API usa o padrão RFC 9457 para erros:**
 ````shell
 
 {
-	"type": "https://api.todolist.com/errors/validation-error",
-	"title": "Erro de validação nos parâmetros",
-	"status": 400,
-	"detail": "Um ou mais parâmetros da requisição são inválidos.",
-	"instance": "/tasks/calendar",
-	"app:errorCode": "VAL-400",
-	"timestamp": "2025-10-23T19:52:31.580948600Z",
-	"path": "/tasks/calendar",
-	"traceId": "081ffb03-863b-488d-9c85-68a3c8ed0ac5",
-	"invalidParams": {
-		"getTasksByMonth.month": "deve estar entre 1 e 12"
-	}
+  "type": "https://api.todolist.com/errors/validation",
+  "title": "Invalid data",
+  "status": 400,
+  "detail": "invalid fields",
+  "instance": "/tasks",
+  "app:errorCode": "VLD-400",
+  "timestamp": "2026-05-26T21:52:08.684226867",
+  "errors": {
+    "title": "Title is required."
+  }
 }
-
 ````
 
 ### 🗄️ Modelo de Dados
@@ -198,6 +239,13 @@ http://localhost:8080/swagger-ui/index.html#/
     2025-10-22 10:30:00 - INFO - Creating new task: Estudar Spring Boot
     2025-10-22 10:30:01 - INFO - Task created successfully with id: 1
     2025-10-22 10:35:00 - INFO - Adding reminder to task 1: 2025-10-28T10:00:00
+````
+
+### 📚 Documentação da API
+**Base URL**
+
+````
+http://localhost:8080/swagger-ui/index.html#/
 ````
 
 ## 📄 Licença
