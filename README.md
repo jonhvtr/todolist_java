@@ -142,15 +142,18 @@ A aplicação utiliza DB_URL como conexão principal.
 
 ### 🗂️ Tarefas (Tasks)
 
-| Método | Endpoint                 | Descrição                            |
-|---------|--------------------------|--------------------------------------|
-| GET     | `/tasks`                 | Lista todas as tarefas               |
-| POST    | `/tasks`                 | Cria uma nova tarefa                 |
-| GET     | `/tasks/{taskId}`        | Busca uma tarefa específica          |
-| PUT     | `/tasks`                 | Atualiza uma tarefa completa         |
-| DELETE  | `/tasks/{taskId}`        | Deleta uma tarefa                    |
-| PATCH   | `/tasks/{taskId}/complete` | Marca tarefa como completa         |
-| PATCH   | `/tasks/{taskId}/due-date` | Atualiza data de vencimento         |
+| Método | Endpoint                              | Descrição                                    |
+|---------|---------------------------------------|----------------------------------------------|
+| GET     | `/tasks?status=PENDING&priority=NONE` | Busca dinâmica das tarefas                   |
+| GET     | `/tasks/search?query=tarefa`          | Busca tarefas pelo título                    |
+| GET     | `/tasks/reminder?query=PENDING`       | Busca tarefas que contém um lembrete         |
+| GET     | `/tasks/calendar?year=2026&month=01`  | Lista as tarefas de acordo com a data passada |
+| POST    | `/tasks`                              | Cria uma nova tarefa                         |
+| GET     | `/tasks/{taskId}`                     | Busca uma tarefa específica                  |
+| PUT     | `/tasks`                              | Atualiza uma tarefa completa                 |
+| DELETE  | `/tasks/{taskId}`                     | Deleta uma tarefa                            |
+| PATCH   | `/tasks/{taskId}/complete`            | Marca tarefa como completa                   |
+| PATCH   | `/tasks/{taskId}/due-date`            | Adiciona/Altera data de vencimento           |
 
 ---
 
@@ -163,14 +166,6 @@ A aplicação utiliza DB_URL como conexão principal.
 | GET     | `/tasks/reminder`                | Lista todas as tarefas com lembretes |
 
 ---
-
-### 🔍 Busca e Filtros
-
-| Método | Endpoint                                      | Descrição                                     |
-|---------|-----------------------------------------------|-----------------------------------------------|
-| GET     | `/tasks/search?q={termo}`                     | Busca tarefas por título             |
-| GET     | `/tasks/ | Filtra por status e/ou prioridade |
-| GET     | `/tasks/calendar`    | Lista tarefas de um mês específico            |
 
 ## Exemplos de Requisições
 ### Criar uma tarefa
