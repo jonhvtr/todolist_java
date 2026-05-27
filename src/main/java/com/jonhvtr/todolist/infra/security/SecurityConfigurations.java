@@ -76,6 +76,19 @@ public class SecurityConfigurations {
 
     @Bean
     @Order(2)
+    public SecurityFilterChain swaggerChain(HttpSecurity http, JsonAuthenticationFilter jsonAuthenticationFilter) throws Exception {
+        return http
+                .securityMatcher("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html")
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+                .addFilterAt(jsonAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .build();
+    }
+
+    @Bean
+    @Order(3)
     public SecurityFilterChain securityFilterChain(
             HttpSecurity httpSecurity,
             CustomAuthenticationEntryPoint authEntryPoint
